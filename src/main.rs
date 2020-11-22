@@ -19,6 +19,7 @@ use input_transaction::InputTransaction;
 mod bank;
 use bank::Bank;
 
+mod concurrent_bank;
 /// Parses input csv and applies transactions to the new/empty `Bank`.
 fn bank_from_transactions_csv(filename: &str) -> Bank {
     let mut bank = Bank::new();

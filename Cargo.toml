@@ -9,3 +9,4 @@ serde = { version = "1.0.117", features = ["derive"] }
 clap = "2.33.3"
 rust_decimal = "1.8.1"
 csv = "1.1.4"
+num_cpus = "1.13.0"
