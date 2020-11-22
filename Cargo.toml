@@ -4,3 +4,7 @@ version = "0.1.0"
 authors = ["Zura Benashvili <zura.benashvili@gmail.com>"]
 edition = "2018"
 
+[dependencies]
+serde = { version = "1.0.117", features = ["derive"] }
+rust_decimal = "1.8.1"
+csv = "1.1.4"
