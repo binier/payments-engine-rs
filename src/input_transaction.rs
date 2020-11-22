@@ -4,12 +4,12 @@ use crate::types::{ClientID, TransactionID, Amount};
 
 #[derive(Deserialize)]
 pub struct InputTransaction {
+    #[serde(rename = "type")]
+    pub tx_type: String,
     #[serde(rename = "client")]
     pub client_id: ClientID,
     #[serde(rename = "tx")]
     pub tx_id: TransactionID,
-    #[serde(rename = "type")]
-    pub tx_type: String,
     pub amount: Option<Amount>,
 }
 
