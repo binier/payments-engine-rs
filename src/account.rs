@@ -130,7 +130,7 @@ impl Account {
             return Err("can't apply transaction to a locked account");
         }
 
-        if self.transactions.contains_key(&tx.get_tx_id()) {
+        if !tx.is_ref() && self.transactions.contains_key(&tx.get_tx_id()) {
             return Err("transaction with same id already applied");
         }
 

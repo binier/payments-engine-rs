@@ -35,6 +35,13 @@ pub enum Transaction {
 }
 
 impl Transaction {
+    pub fn is_ref(&self) -> bool {
+        match self {
+            Self::Deposit(_) | Self::Withdrawal(_) => false,
+            _ => true,
+        }
+    }
+
     pub fn get_client_id(&self) -> ClientID {
         match self {
             Transaction::Deposit(tx) => tx.client_id,
