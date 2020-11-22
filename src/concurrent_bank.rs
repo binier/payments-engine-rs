@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::thread;
 use std::sync::mpsc;
 
@@ -8,9 +7,10 @@ use crate::types::ClientID;
 use crate::transaction::Transaction;
 use crate::account::Account;
 use crate::bank::Bank;
+use crate::basic_bank::BasicBank;
 
 struct BankThread {
-    pub thread: thread::JoinHandle<Bank>,
+    pub thread: thread::JoinHandle<BasicBank>,
     pub tx: mpsc::Sender<Transaction>,
 }
 
@@ -21,10 +21,44 @@ struct BankThread {
 /// thread. Then based on hash of the `client_id`, `ConcurrentBank`
 /// decides to which subbank transaction should go to. This
 /// way each subbank has a **dedicated only to it** set of clients.
-#[derive(Default)]
 pub struct ConcurrentBank {
     threads: Vec<BankThread>,
     count: usize,
+}
+
+impl Default for ConcurrentBank {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Bank for ConcurrentBank {
+    type AccountsIter = Box<dyn Iterator<Item = Account>>;
+    // TODO: propagate error from apply_tx.
+    /// Apply `Transaction` to the `Account` in `Bank`.
+    fn apply_tx<T: Into<Transaction>>(&mut self, tx: T) -> Result<(), ()> {
+        let tx: Transaction = tx.into();
+        let bank_thread = self.get_thread_for_client_mut(tx.get_client_id());
+
+        let _ = bank_thread.tx.send(tx);
+        Ok(())
+    }
+
+    /// Consumes `ConcurrentBank` and **Blocks** untill all threads finish.
+    /// Outputs `Account` iterator.
+    fn into_accounts_iter(self) -> Self::AccountsIter {
+        let iter = self.threads.into_iter()
+            .map(|bank_thread| {
+                let BankThread { thread, tx } = bank_thread;
+                // drop `Sender` to let thread no that it's
+                // work is finished and it can return.
+                drop(tx);
+                thread.join().unwrap()
+            })
+            .map(|bank| bank.into_accounts_iter())
+            .flatten();
+        Box::new(iter)
+    }
 }
 
 impl ConcurrentBank {
@@ -41,7 +75,7 @@ impl ConcurrentBank {
             threads: (0..count).map(|_| {
                 let (tx, rx) = mpsc::channel();
                 let thread = thread::spawn(move || {
-                    let mut bank = Bank::new();
+                    let mut bank = BasicBank::new();
                     loop {
                         match rx.recv() {
                             Ok(transaction) => {
@@ -67,36 +101,5 @@ impl ConcurrentBank {
         client_id: ClientID
     ) -> &mut BankThread {
         &mut self.threads[(client_id as usize) % self.count]
-    }
-
-    // TODO: propagate error from apply_tx.
-    /// Apply `Transaction` to the `Account` in `Bank`.
-    pub fn apply_tx<T: Into<Transaction>>(&mut self, tx: T) -> Result<(), ()> {
-        let tx: Transaction = tx.into();
-        let bank_thread = self.get_thread_for_client_mut(tx.get_client_id());
-
-        bank_thread.tx.send(tx);
-        Ok(())
-    }
-
-    /// Consumes `ConcurrentBank` and **Blocks** untill all threads finish.
-    /// Outputs `Account` iterator.
-    pub fn into_accounts_iter(self) -> impl Iterator<Item = Account> {
-        self.threads.into_iter()
-            .map(|bank_thread| {
-                let BankThread { thread, tx } = bank_thread;
-                // drop `Sender` to let thread no that it's
-                // work is finished and it can return.
-                drop(tx);
-                thread.join().unwrap()
-            })
-            .map(|bank| bank.into_accounts_iter())
-            .flatten()
-    }
-
-    /// Consumes `ConcurrentBank` and **Blocks** untill all threads finish.
-    /// Outputs `Account` vector.
-    pub fn into_accounts(self) -> Vec<Account> {
-        self.into_accounts_iter().collect()
     }
 }
