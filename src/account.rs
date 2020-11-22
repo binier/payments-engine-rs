@@ -171,3 +171,166 @@ impl Into<OutputAccount> for Account {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+    use rust_decimal::prelude::*;
+    use crate::transaction::{TransactionInfo, TransactionRef};
+
+    fn dec(val: &str) -> Amount {
+        Amount::from_str(val).unwrap()
+    }
+
+    fn zero() -> Amount {
+        Amount::zero()
+    }
+
+    #[test]
+    fn deposit_withdraw() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Deposit(TransactionInfo {
+            client_id: 1,
+            tx_id: 1,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert_eq!(acc.available, dec("1.05"));
+        assert_eq!(acc.held, zero());
+
+        assert!(acc.apply_tx(Transaction::Withdrawal(TransactionInfo {
+            client_id: 1,
+            tx_id: 2,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, zero());
+    }
+
+    #[test]
+    fn withdraw_from_empty_account() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Withdrawal(TransactionInfo {
+            client_id: 1,
+            tx_id: 2,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_err());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, zero());
+    }
+
+
+    #[test]
+    fn withdraw_more_than_have() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Deposit(TransactionInfo {
+            client_id: 1,
+            tx_id: 1,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert!(acc.apply_tx(Transaction::Withdrawal(TransactionInfo {
+            client_id: 1,
+            tx_id: 2,
+            amount: dec("1.06"),
+            under_dispute: false,
+        })).is_err());
+
+        assert_eq!(acc.available, dec("1.05"));
+        assert_eq!(acc.held, zero());
+    }
+
+    #[test]
+    fn withdraw_held_funds() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Deposit(TransactionInfo {
+            client_id: 1,
+            tx_id: 1,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert!(acc.apply_tx(Transaction::Dispute(TransactionRef {
+            client_id: 1,
+            tx_id: 1,
+        })).is_ok());
+
+        assert!(acc.apply_tx(Transaction::Withdrawal(TransactionInfo {
+            client_id: 1,
+            tx_id: 2,
+            amount: dec("1.04"),
+            under_dispute: false,
+        })).is_err());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, dec("1.05"));
+    }
+
+    #[test]
+    fn dispute_resolve() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Deposit(TransactionInfo {
+            client_id: 1,
+            tx_id: 1,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert!(acc.apply_tx(Transaction::Dispute(TransactionRef {
+            client_id: 1,
+            tx_id: 1,
+        })).is_ok());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, dec("1.05"));
+
+        assert!(acc.apply_tx(Transaction::Resolve(TransactionRef {
+            client_id: 1,
+            tx_id: 1,
+        })).is_ok());
+
+        assert_eq!(acc.available, dec("1.05"));
+        assert_eq!(acc.held, zero());
+    }
+
+    #[test]
+    fn dispute_chargeback() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Deposit(TransactionInfo {
+            client_id: 1,
+            tx_id: 1,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert!(acc.apply_tx(Transaction::Dispute(TransactionRef {
+            client_id: 1,
+            tx_id: 1,
+        })).is_ok());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, dec("1.05"));
+
+        assert!(acc.apply_tx(Transaction::ChargeBack(TransactionRef {
+            client_id: 1,
+            tx_id: 1,
+        })).is_ok());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, zero());
+        assert!(acc.locked);
+    }
+}
