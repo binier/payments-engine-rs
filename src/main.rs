@@ -4,14 +4,13 @@ use clap::{App, Arg};
 
 mod types;
 mod decimal_serde;
+mod account;
+
 mod transaction;
 use transaction::Transaction;
 
 mod output_account;
 use output_account::OutputAccount;
-
-mod account;
-use account::Account;
 
 mod input_transaction;
 use input_transaction::InputTransaction;
@@ -19,10 +18,15 @@ use input_transaction::InputTransaction;
 mod bank;
 use bank::Bank;
 
+mod basic_bank;
+use basic_bank::BasicBank;
+
 mod concurrent_bank;
+use concurrent_bank::ConcurrentBank;
+
 /// Parses input csv and applies transactions to the new/empty `Bank`.
-fn bank_from_transactions_csv(filename: &str) -> Bank {
-    let mut bank = Bank::new();
+fn bank_from_transactions_csv<B: Bank>(filename: &str) -> B {
+    let mut bank = B::default();
     let mut rdr = csv::Reader::from_path(filename).unwrap();
 
     rdr.deserialize::<InputTransaction>()
@@ -38,7 +42,11 @@ fn bank_from_transactions_csv(filename: &str) -> Bank {
 }
 
 /// Extracts accounts data from the bunk and serializes to writer.
-fn bank_accounts_to_csv<W: io::Write>(bank: Bank, writer: W) {
+/// No need to create BufWriter since `csv::Writer` uses it's own buffer.
+fn bank_accounts_to_csv<B, W>(bank: B, writer: W)
+where B: Bank,
+      W: io::Write,
+{
     let mut wtr = csv::Writer::from_writer(writer);
 
     for account in bank.into_accounts_iter() {
@@ -55,12 +63,21 @@ fn main() {
              .help("input file")
              .required(true)
              .index(1))
+        .arg(Arg::with_name("concurrent")
+             .help("concurrent mode")
+             .short("c")
+             .long("concurrent")
+             .takes_value(false))
         .get_matches();
 
-    let bank = bank_from_transactions_csv(
-        matches.value_of("INPUT").unwrap()
-    );
+    let filename = matches.value_of("INPUT").unwrap();
+    let is_concurrent = matches.is_present("concurrent");
 
-    // No need to create BufWriter since `csv::Writer` uses it's own buffer.
-    bank_accounts_to_csv(bank, io::stdout().lock());
+    if !is_concurrent {
+        let bank = bank_from_transactions_csv::<BasicBank>(filename);
+        bank_accounts_to_csv(bank, io::stdout().lock());
+    } else {
+        let bank = bank_from_transactions_csv::<ConcurrentBank>(filename);
+        bank_accounts_to_csv(bank, io::stdout().lock());
+    }
 }
