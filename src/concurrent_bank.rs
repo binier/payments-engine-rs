@@ -1,8 +1,6 @@
 use std::thread;
 use std::sync::mpsc;
 
-use num_cpus;
-
 use crate::types::ClientID;
 use crate::transaction::Transaction;
 use crate::account::Account;
@@ -76,14 +74,9 @@ impl ConcurrentBank {
                 let (tx, rx) = mpsc::channel();
                 let thread = thread::spawn(move || {
                     let mut bank = BasicBank::new();
-                    loop {
-                        match rx.recv() {
-                            Ok(transaction) => {
-                                // ignore result
-                                let _ = bank.apply_tx(transaction);
-                            },
-                            Err(mpsc::RecvError) => break,
-                        }
+                    while let Ok(transaction) = rx.recv() {
+                        // ignore result
+                        let _ = bank.apply_tx(transaction);
                     }
                     bank
                 });

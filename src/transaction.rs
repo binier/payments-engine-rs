@@ -36,10 +36,7 @@ pub enum Transaction {
 
 impl Transaction {
     pub fn is_ref(&self) -> bool {
-        match self {
-            Self::Deposit(_) | Self::Withdrawal(_) => false,
-            _ => true,
-        }
+        matches!(self, Self::Deposit(_) | Self::Withdrawal(_))
     }
 
     pub fn get_client_id(&self) -> ClientID {
@@ -64,6 +61,7 @@ impl Transaction {
     }
 
     /// Get string representation of the `Transaction` type.
+    #[allow(dead_code)]
     pub fn get_type(&self) -> &'static str {
         match self {
             Transaction::Deposit(_) => "deposit",

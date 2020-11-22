@@ -166,7 +166,7 @@ impl Into<OutputAccount> for Account {
             client_id: self.client_id,
             available: self.available,
             held: self.held,
-            total: self.available + self.held,
+            total: self.total(),
             locked: self.locked,
         }
     }
