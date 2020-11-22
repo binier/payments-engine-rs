@@ -1,0 +1,6 @@
+[package]
+name = "payments-engine-rs"
+version = "0.1.0"
+authors = ["Zura Benashvili <zura.benashvili@gmail.com>"]
+edition = "2018"
+
