@@ -2,14 +2,20 @@ use serde::Deserialize;
 
 use crate::types::{ClientID, TransactionID, Amount};
 
-#[derive(Deserialize)]
+/// Raw transaction that we receive as an input.
+#[derive(Debug, Deserialize)]
 pub struct InputTransaction {
+    /// Transaction type. See [Transaction](crate::transaction::Transaction)
+    /// for all supported/available types
     #[serde(rename = "type")]
     pub tx_type: String,
     #[serde(rename = "client")]
     pub client_id: ClientID,
+    /// Transaction ID.
     #[serde(rename = "tx")]
     pub tx_id: TransactionID,
+    /// Can be optional for some types of transactions,
+    /// for details see: [Transaction](crate::transaction::Transaction)
     pub amount: Option<Amount>,
 }
 

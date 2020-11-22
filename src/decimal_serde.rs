@@ -1,7 +1,8 @@
 use serde::Serializer;
 use rust_decimal::{Decimal, RoundingStrategy};
 
-/// serializes decimal with rounded down precision 4.
+/// Serializes decimal with rounded down precision 4,
+/// as requested from spec document.
 pub fn serialize<S>(
     num: &Decimal,
     serializer: S,

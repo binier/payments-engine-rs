@@ -3,6 +3,8 @@ use serde::Serialize;
 use crate::types::{ClientID, Amount};
 use crate::decimal_serde::serialize as serialize_decimal;
 
+/// Account data that we serialize and output as a result,
+/// which represents final account data for the client.
 #[derive(Serialize)]
 pub struct OutputAccount {
     #[serde(rename = "client")]

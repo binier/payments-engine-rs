@@ -7,13 +7,19 @@ use crate::output_account::OutputAccount;
 #[derive(Debug)]
 pub struct Account {
     client_id: ClientID,
+    /// Amount on the balance that.
     available: Amount,
+    /// Amount that is `held` because of the ongoing dispute.
     held: Amount,
+    /// Whether account is locked/frozen.
+    /// Happens if we encounter `Transaction::Chargeback`
     locked: bool,
     transactions: HashMap<TransactionID, Transaction>,
 }
 
 impl Account {
+    /// Creates an **unlocked** account with **zero** balance
+    /// and with no transactions.
     pub fn new(client_id: ClientID) -> Self {
         Self {
             client_id,
@@ -24,6 +30,7 @@ impl Account {
         }
     }
 
+    /// Total amount that user has: **available + held**
     pub fn total(&self) -> Amount {
         self.available + self.held
     }
@@ -117,6 +124,7 @@ impl Account {
     }
 
     // TODO: create errors enum.
+    /// Apply transaction to the account.
     pub fn apply_tx(&mut self, tx: Transaction) -> Result<(), &'static str> {
         if self.locked {
             return Err("can't apply transaction to a locked account");

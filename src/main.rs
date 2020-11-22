@@ -47,6 +47,7 @@ fn bank_accounts_to_csv<W: io::Write>(bank: Bank, writer: W) {
 }
 
 fn main() {
+    // parse cli args
     let matches = App::new("simple payments engine")
         .version("0.1")
         .arg(Arg::with_name("INPUT")

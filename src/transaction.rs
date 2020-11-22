@@ -3,12 +3,14 @@ use std::convert::TryFrom;
 use crate::types::{ClientID, TransactionID, Amount};
 use crate::input_transaction::InputTransaction;
 
+/// Ref to the existing transaction.
 #[derive(Debug)]
 pub struct TransactionRef {
     pub client_id: ClientID,
     pub tx_id: TransactionID,
 }
 
+/// Transaction info.
 #[derive(Debug)]
 pub struct TransactionInfo {
     pub client_id: ClientID,
@@ -17,12 +19,18 @@ pub struct TransactionInfo {
     pub under_dispute: bool,
 }
 
+/// Different types of transactions that are supported.
 #[derive(Debug)]
 pub enum Transaction {
+    /// Money deposited/added to the account.
     Deposit(TransactionInfo),
+    /// Money withdrawn/removed from the account.
     Withdrawal(TransactionInfo),
+    /// Start dispute for the existing `Transaction`.
     Dispute(TransactionRef),
+    /// Resolve `Dispute` by basically undoing it.
     Resolve(TransactionRef),
+    /// Chargeback `Dispute`. It freezes/locks the account.
     ChargeBack(TransactionRef),
 }
 
@@ -37,6 +45,7 @@ impl Transaction {
         }
     }
 
+    /// Get `Transaction` ID.
     pub fn get_tx_id(&self) -> TransactionID {
         match self {
             Transaction::Deposit(tx) => tx.tx_id,
@@ -47,6 +56,7 @@ impl Transaction {
         }
     }
 
+    /// Get string representation of the `Transaction` type.
     pub fn get_type(&self) -> &'static str {
         match self {
             Transaction::Deposit(_) => "deposit",
