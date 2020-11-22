@@ -86,12 +86,19 @@ impl TryFrom<InputTransaction> for Transaction {
             if amount.is_none() {
                 return Err("for deposit and withdrawal, amount can't be none");
             }
+
+            let amount = amount.unwrap();
+            if amount.is_sign_negative() {
+                return Err("amount can't be negative");
+            }
+
             let tx_info = TransactionInfo {
                 client_id,
                 tx_id,
-                amount: amount.unwrap(),
+                amount,
                 under_dispute: false,
             };
+
             return Ok(match tx_type.as_str() {
                 "deposit" => Transaction::Deposit(tx_info),
                 "withdrawal" => Transaction::Withdrawal(tx_info),
