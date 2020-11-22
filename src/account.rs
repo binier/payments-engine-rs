@@ -153,7 +153,9 @@ impl Account {
             }
         };
 
-        self.transactions.insert(tx.get_tx_id(), tx);
+        if !tx.is_ref() {
+            self.transactions.insert(tx.get_tx_id(), tx);
+        }
         Ok(())
     }
 }
