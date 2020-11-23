@@ -277,6 +277,38 @@ mod tests {
         assert_eq!(acc.held, dec("1.05"));
     }
 
+    /// for now only deposit disputes are allowed, it should error if
+    /// we try to dispute "withdrawal" transaction.
+    #[test]
+    fn dispute_withdrawal() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Deposit(TransactionInfo {
+            client_id: 1,
+            tx_id: 1,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert!(acc.apply_tx(Transaction::Withdrawal(TransactionInfo {
+            client_id: 1,
+            tx_id: 2,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, zero());
+
+        assert!(acc.apply_tx(Transaction::Dispute(TransactionRef {
+            client_id: 1,
+            tx_id: 2,
+        })).is_err());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, zero());
+    }
+
     #[test]
     fn dispute_resolve() {
         let mut acc = Account::new(1);
@@ -332,5 +364,74 @@ mod tests {
         assert_eq!(acc.available, zero());
         assert_eq!(acc.held, zero());
         assert!(acc.locked);
+    }
+
+    #[test]
+    fn resolve_not_existant_tx() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Resolve(TransactionRef {
+            client_id: 1,
+            tx_id: 1,
+        })).is_err());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, zero());
+    }
+
+    #[test]
+    fn resolve_not_under_dispute() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Deposit(TransactionInfo {
+            client_id: 1,
+            tx_id: 1,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert!(acc.apply_tx(Transaction::Resolve(TransactionRef {
+            client_id: 1,
+            tx_id: 1,
+        })).is_err());
+
+        assert_eq!(acc.available, dec("1.05"));
+        assert_eq!(acc.held, zero());
+    }
+
+    #[test]
+    fn chargeback_not_existant_tx() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::ChargeBack(TransactionRef {
+            client_id: 1,
+            tx_id: 1,
+        })).is_err());
+
+        assert_eq!(acc.available, zero());
+        assert_eq!(acc.held, zero());
+        assert!(!acc.locked);
+    }
+
+    #[test]
+    fn chargeback_not_under_dispute() {
+        let mut acc = Account::new(1);
+
+        assert!(acc.apply_tx(Transaction::Deposit(TransactionInfo {
+            client_id: 1,
+            tx_id: 1,
+            amount: dec("1.05"),
+            under_dispute: false,
+        })).is_ok());
+
+        assert!(acc.apply_tx(Transaction::ChargeBack(TransactionRef {
+            client_id: 1,
+            tx_id: 1,
+        })).is_err());
+
+
+        assert_eq!(acc.available, dec("1.05"));
+        assert_eq!(acc.held, zero());
+        assert!(!acc.locked);
     }
 }
