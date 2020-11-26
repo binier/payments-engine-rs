@@ -13,23 +13,18 @@ pub struct BasicBank {
 
 impl Bank for BasicBank {
     type AccountsIter = Box<dyn Iterator<Item = Account>>;
+
     // TODO: propagate error from apply_tx.
     /// Apply `Transaction` to the `Account` in `BasicBank`.
     fn apply_tx<T: Into<Transaction>>(&mut self, tx: T) -> Result<(), ()> {
         let tx: Transaction = tx.into();
-        let account: &mut Account = loop {
-            let client_id = tx.get_client_id();
+        let client_id = tx.get_client_id();
 
-            if let Some(account) = self.accounts.get_mut(&client_id) {
-                break account;
-            }
-            self.accounts.insert(client_id, Account::new(client_id));
-        };
-
-        match account.apply_tx(tx) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(()),
-        }
+        self.accounts
+            .entry(client_id)
+            .or_insert(Account::new(client_id))
+            .apply_tx(tx)
+            .or(Err(())) // ignore error
     }
 
     /// Consumes `BasicBank` returning accounts iterator.

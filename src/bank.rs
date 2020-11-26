@@ -24,10 +24,9 @@ pub trait Bank: Default {
     /// Reads and deserializes input csv from reader and applies
     /// transactions to the new/empty `Bank`. Returning `Bank`.
     fn from_input_transactions_csv<R: io::Read>(reader: R) -> Self {
-        let mut rdr = csv::Reader::from_reader(reader);
-
         Self::from_input_transactions(
-            rdr.deserialize::<InputTransaction>()
+            csv::Reader::from_reader(reader)
+                .deserialize::<InputTransaction>()
                 .filter_map(Result::ok)
         )
     }
