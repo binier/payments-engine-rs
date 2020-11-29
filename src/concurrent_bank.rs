@@ -9,12 +9,12 @@ use crate::basic_bank::BasicBank;
 
 struct BankThread {
     thread: Option<thread::JoinHandle<BasicBank>>,
-    sender: Option<mpsc::Sender<Transaction>>,
+    sender: Option<crossbeam_channel::Sender<Transaction>>,
 }
 
 impl BankThread {
     pub fn new() -> Self {
-        let (sender, rx) = mpsc::channel();
+        let (sender, rx) = crossbeam_channel::unbounded();
         let thread = thread::spawn(move || {
             let mut bank = BasicBank::new();
             while let Ok(tx) = rx.recv() {
