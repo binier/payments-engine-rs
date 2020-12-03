@@ -1,5 +1,4 @@
 use std::thread;
-use std::sync::mpsc;
 
 use crate::types::ClientID;
 use crate::transaction::Transaction;
@@ -37,15 +36,10 @@ impl BankThread {
     }
 
     pub fn join(&mut self) -> Option<BasicBank> {
-        match (self.thread.take(), self.sender.take()) {
-            (Some(thread), Some(sender)) => {
-                // drop `Sender` to let thread no that it's
-                // work is finished and it can return.
-                drop(sender);
-                thread.join().ok()
-            },
-            _ => None,
-        }
+        // drop `Sender` to let thread no that it's
+        // work is finished and it can return.
+        drop(self.sender.take()?);
+        self.thread.take()?.join().ok()
     }
 }
 

@@ -81,11 +81,8 @@ impl TryFrom<InputTransaction> for Transaction {
         let InputTransaction { client_id, tx_id, tx_type, amount } = input;
 
         if let "deposit" | "withdrawal" = tx_type.as_str() {
-            if amount.is_none() {
-                return Err("for deposit and withdrawal, amount can't be none");
-            }
+            let amount = amount.ok_or("for deposit and withdrawal, amount can't be none")?;
 
-            let amount = amount.unwrap();
             if amount.is_sign_negative() {
                 return Err("amount can't be negative");
             }

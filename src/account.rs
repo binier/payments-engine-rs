@@ -39,10 +39,8 @@ impl Account {
     /// does bunch of checks before calling this method, which we don't
     /// do here. Also transation won't be added to `Self::transactions`.
     fn dispute_tx_with_id(&mut self, tx_id: TransactionID) -> Result<(), &'static str> {
-        let tx = match self.transactions.get_mut(&tx_id) {
-            Some(tx) => tx,
-            None => return Err("transaction for dispute not found"),
-        };
+        let tx = self.transactions.get_mut(&tx_id)
+            .ok_or("transaction for dispute not found")?;
 
         match tx {
             Transaction::Deposit(tx_info) => {
@@ -68,10 +66,8 @@ impl Account {
     /// does bunch of checks before calling this method, which we don't
     /// do here. Also transation won't be added to `Self::transactions`.
     fn resolve_tx_with_id(&mut self, tx_id: TransactionID) -> Result<(), &'static str> {
-        let tx = match self.transactions.get_mut(&tx_id) {
-            Some(tx) => tx,
-            None => return Err("transaction for dispute not found"),
-        };
+        let tx = self.transactions.get_mut(&tx_id)
+            .ok_or("transaction for resolve not found")?;
 
         match tx {
             Transaction::Deposit(tx_info) => {
@@ -97,10 +93,8 @@ impl Account {
     /// does bunch of checks before calling this method, which we don't
     /// do here. Also transation won't be added to `Self::transactions`.
     fn chargeback_tx_with_id(&mut self, tx_id: TransactionID) -> Result<(), &'static str> {
-        let tx = match self.transactions.get_mut(&tx_id) {
-            Some(tx) => tx,
-            None => return Err("transaction for dispute not found"),
-        };
+        let tx = self.transactions.get_mut(&tx_id)
+            .ok_or("transaction for chargeback not found")?;
 
         match tx {
             Transaction::Deposit(tx_info) => {
